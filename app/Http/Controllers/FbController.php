@@ -9,6 +9,7 @@ use Socialite;
 use Exception;
 use Auth;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Redirect;
 
 use function GuzzleHttp\json_decode;
 
@@ -60,22 +61,24 @@ class FbController extends Controller
     public function revolutSignin() {
 
         $client = new Client();
+
+        $headers = [
+            'accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Token b60c42254d10df6e4c3801256fbc552596952502'
+        ];
         $url = 'https://ob.nordigen.com/api/agreements/enduser/';
         $data = [
             'max_historical_days' => 30,
             'enduser_id' => '8234e18b-f360-48cc-8bcf-c8625596d74a',
             'aspsp_id' => 'REVOLUT_REVOGB21'
         ];
-        $request = $client->post($url , ['body' => json_encode($data), 'headers' => [
-            'accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Token c8bd833f2f02b443cf8593116dbce9e82578340c'],
-        ]);
+        $request = $client->post($url , ['body' => json_encode($data), 'headers' => $headers]);
 
 	    $body = json_decode($request->getBody());
 
-        $redirect = 'http://localhost:8000/';
-        $reference = '124158';
+        $redirect = 'http://localhost:8000/auth/fromrevolut';
+        $reference = rand(100000, 999999);
         $enduser_id = $body->enduser_id;
         $agreements = array($body->id);
         $user_language = 'EN';
@@ -89,11 +92,7 @@ class FbController extends Controller
             'user_language' => $user_language,
         ];
 
-        $request = $client->post($url , ['body' => json_encode($data), 'headers' => [
-            'accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Token c8bd833f2f02b443cf8593116dbce9e82578340c'],
-        ]);
+        $request = $client->post($url , ['body' => json_encode($data), 'headers' => $headers]);
 
         $body = json_decode($request->getBody());
 
@@ -104,20 +103,23 @@ class FbController extends Controller
             'aspsp_id' => 'REVOLUT_REVOGB21',
         ];
 
-        $request = $client->post($url , ['body' => json_encode($data), 'headers' => [
-            'accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Token c8bd833f2f02b443cf8593116dbce9e82578340c'],
-        ]);
+        $request = $client->post($url , ['body' => json_encode($data), 'headers' => $headers]);
 
         $body = json_decode($request->getBody());
 
         $initiate = $body->initiate;
 
-        var_dump($initiate);
+        return Redirect::to($initiate);
+    }
 
-        // $request = $client->get($initiate);
+    public function revolutRedirect() {
+        $createUser = User::create([
+            'name' => 'user',
+            'email' => 'user@user.com',
+            'password' => encrypt('john123')
+        ]);
 
-        // $request->getBody();
+        Auth::login($createUser);
+        return redirect('/dashboard');
     }
 }
